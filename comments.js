@@ -67,4 +67,10 @@ const server = http.createServer((req, res) => {
                 return res.end('404 Not Found');
             }
             // if the file is found, set Content-type and send data
-            res.setHeader('Content-type', mimeType[ext] || 'text/plain
+            res.setHeader('Content-type', mimeType[ext] || 'text/plain');
+            res.end(data);
+        }
+    );
+    }
+    }
+);
