@@ -1,3 +1,3 @@
-const addNumbers = (a, b) => {
+const calculateNumbers = (a, b) => {
     return a + b;
 }
