@@ -1,76 +1,71 @@
-// create web server
-// create a server object:
-const http = require('http');
-const fs = require('fs');
-const url = require('url');
-const path = require('path');
-const qs = require('querystring');
-const port = 8080;
+// Create web server
+// 1. Create a web server
+// 2. Handle GET /comments
+// 3. Handle POST /comments
+// 4. Handle GET /comments/:id
+// 5. Handle DELETE /comments/:id
+// 6. Handle PUT /comments/:id
+// 7. Handle GET /comments/:id/author
+// 8. Handle GET /comments/:id/post
 
-const server = http.createServer((req, res) => {
-    // parse URL
-    const parsedUrl = url.parse(req.url);
+const express = require('express');
+const router = express.Router();
+const comments = require('../data/comments');
+const posts = require('../data/posts');
 
-    // extract URL path
-    let pathname = `.${parsedUrl.pathname}`;
+// 2. Handle GET /comments
+router.get('/', (req, res) => {
+    res.json(comments);
+});
 
-    // maps file extention to MIME types
-    const mimeType = {
-        '.ico': 'image/x-icon',
-        '.html': 'text/html',
-        '.js': 'text/javascript',
-        '.json': 'application/json',
-        '.css': 'text/css',
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.wav': 'audio/wav',
-        '.mp3': 'audio/mpeg',
-        '.svg': 'image/svg+xml',
-        '.pdf': 'application/pdf',
-        '.doc': 'application/msword'
+// 3. Handle POST /comments
+router.post('/', (req, res) => {
+    // Check if all required fields are present
+    if (!req.body) {
+        res.status(400).json({ error: 'Please provide all required fields' });
+        return;
+    }
+
+    // Check if all required fields are non-empty
+    if (!req.body.name || !req.body.comment || !req.body.postId) {
+        res.status(400).json({ error: 'Please provide all required fields' });
+        return;
+    }
+
+    // Check if the postId is valid
+    if (!posts[req.body.postId]) {
+        res.status(400).json({ error: 'Please provide a valid postId' });
+        return;
+    }
+
+    // Add the comment to the comments array
+    const comment = {
+        ...req.body,
+        id: comments.length + 1,
     };
-    const ext = path.parse(pathname).ext;
-    //console.log(ext);
-    pathname = pathname.replace('/', '');
-    //console.log(pathname);
-    if (pathname === 'comments') {
-        if (req.method === 'POST') {
-            let body = '';
-            req.on('data', chunk => {
-                body += chunk.toString(); // convert Buffer to string
-            });
-            req.on('end', () => {
-                const parsedBody = qs.parse(body);
-                //console.log(parsedBody);
-                fs.appendFile('comments.txt', parsedBody.comment + '\n', function (err) {
-                    if (err) throw err;
-                    console.log('Saved!');
-                });
-                res.writeHead(200, {
-                    'Content-Type': 'text/html'
-                });
-                res.end('Data saved!');
-            });
-        } else {
-            res.writeHead(404, {
-                'Content-Type': 'text/html'
-            });
-            res.end('Not found!');
-        }
-    } else {
-        //  read file from file system
-        fs.readFile(pathname, function (err, data) {
-            if (err) {
-                res.writeHead(404, {
-                    'Content-Type': 'text/html'
-                });
-                return res.end('404 Not Found');
-            }
-            // if the file is found, set Content-type and send data
-            res.setHeader('Content-type', mimeType[ext] || 'text/plain');
-            res.end(data);
-        }
-    );
+    comments.push(comment);
+
+    // Send the comment as response
+    res.status(201).json(comment);
+});
+
+// 4. Handle GET /comments/:id
+router.get('/:id', (req, res) => {
+    // Check if the comment exists
+    if (!comments[req.params.id - 1]) {
+        res.status(404).json({ error: 'Comment not found' });
+        return;
     }
-    }
-);
+
+    // Send the comment as response
+    res.json(comments[req.params.id - 1]);
+});
+
+// 5. Handle DELETE /comments/:id
+router.delete('/:id', (req, res) => {
+    // Check if the comment exists
+    if (!comments[req.params.id - 1]) {
+        res.status(404).json({ error: 'Comment not found' });
+        return;
+    };
+});
